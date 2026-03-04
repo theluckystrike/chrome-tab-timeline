@@ -1,8 +1,12 @@
 # chrome-tab-timeline
 
-> Tab activity timeline for Chrome extensions — track creation, navigation, focus, close events, and session replay for MV3.
-
+[![npm version](https://img.shields.io/npm/v/chrome-tab-timeline)](https://npmjs.com/package/chrome-tab-timeline)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Discord](https://img.shields.io/badge/Discord-Zovo-blueviolet.svg?logo=discord)](https://discord.gg/zovo)
+[![Website](https://img.shields.io/badge/Website-zovo.one-blue)](https://zovo.one)
+
+> Tab activity timeline for Chrome extensions — track creation, navigation, focus, close events, and session replay for MV3.
 
 ## Install
 
@@ -112,3 +116,18 @@ Removes all events from memory.
 ## License
 
 MIT
+
+## See Also
+
+### Related Zovo Repositories
+
+- [webext-tabs-overview](https://github.com/theluckystrike/webext-tabs-overview) - Tab dashboard and stats
+- [chrome-tab-discard](https://github.com/theluckystrike/chrome-tab-discard) - Tab memory management
+- [chrome-extension-starter-mv3](https://github.com/theluckystrike/chrome-extension-starter-mv3) - Production-ready Chrome extension starter
+
+### Zovo Chrome Extensions
+
+- [Zovo Tab Manager](https://chrome.google.com/webstore/detail/zovo-tab-manager) - Manage tabs efficiently
+- [Zovo Focus](https://chrome.google.com/webstore/detail/zovo-focus) - Block distractions
+
+Visit [zovo.one](https://zovo.one) for more information.
