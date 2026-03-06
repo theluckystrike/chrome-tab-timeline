@@ -1,152 +1,124 @@
 # chrome-tab-timeline
 
-[![npm version](https://img.shields.io/npm/v/chrome-tab-timeline)](https://npmjs.com/package/chrome-tab-timeline)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Discord](https://img.shields.io/badge/Discord-Zovo-blueviolet.svg?logo=discord)](https://discord.gg/zovo)
-[![Website](https://img.shields.io/badge/Website-zovo.one-blue)](https://zovo.one)
-[![GitHub Stars](https://img.shields.io/github/stars/theluckystrike/chrome-tab-timeline?style=social)](https://github.com/theluckystrike/chrome-tab-timeline)
+Tab activity timeline for Chrome extensions. Records creation, navigation, focus, and close events across all tabs with automatic eviction, persistence via chrome.storage.local, and session analytics. Built for Manifest V3 service workers.
 
-> Tab activity timeline for Chrome extensions — track creation, navigation, focus, close events, and session replay for MV3.
+INSTALL
 
-Part of the [Zovo](https://zovo.one) developer tools family.
-
-## Install
-
-```bash
+```
 npm install chrome-tab-timeline
 ```
 
-## Usage
+QUICK START
 
 ```js
 import { TabTimeline } from 'chrome-tab-timeline';
 
-// Create a timeline and start recording (chainable)
 const timeline = new TabTimeline(5000).start();
 
-// Get all recorded events
 const events = timeline.getEvents();
-
-// Filter events by type
 const navigations = timeline.getByType('updated');
-const closures = timeline.getByType('removed');
-
-// Get activity for a specific tab
-const tabEvents = timeline.getForTab(42);
-
-// Query events within a time range
+const tabHistory = timeline.getForTab(42);
 const lastHour = timeline.getInRange(Date.now() - 3600000);
 
-// Get the most visited domains
 const topDomains = timeline.getTopDomains(5);
-// => [{ domain: 'github.com', visits: 23 }, ...]
+// [{ domain: 'github.com', visits: 23 }, ...]
 
-// Get a session summary
 const summary = timeline.getSummary();
-// => { totalEvents, tabsCreated, tabsClosed, uniqueUrls, duration }
+// { totalEvents, tabsCreated, tabsClosed, uniqueUrls, duration }
 
-// Persist timeline to chrome.storage.local
 await timeline.save();
-
-// Restore timeline from storage
 await timeline.load();
-
-// Clear all events
 timeline.clear();
 ```
 
-## API
+TIMELINE EVENT
 
-### `TimelineEvent`
+Every recorded event conforms to this shape.
 
 ```ts
 interface TimelineEvent {
-  type: 'created' | 'updated' | 'activated' | 'removed';
-  tabId: number;
-  url?: string;
-  title?: string;
-  timestamp: number;
+  type: 'created' | 'updated' | 'activated' | 'removed'
+  tabId: number
+  url?: string
+  title?: string
+  timestamp: number
 }
 ```
 
-### `TabTimeline`
+The type field maps directly to the Chrome tabs API events that produced it.
 
-#### `new TabTimeline(maxEvents?: number)`
+- created fires on chrome.tabs.onCreated
+- updated fires on chrome.tabs.onUpdated when url or title changes
+- activated fires on chrome.tabs.onActivated and resolves the tab to capture url and title
+- removed fires on chrome.tabs.onRemoved with only tabId and timestamp
 
-Creates a new timeline instance. `maxEvents` sets the maximum number of events retained in memory (default `5000`). Oldest events are evicted when the limit is reached.
+API
 
-#### `timeline.start(): this`
+new TabTimeline(maxEvents?)
 
-Registers listeners on `chrome.tabs.onCreated`, `chrome.tabs.onUpdated`, `chrome.tabs.onActivated`, and `chrome.tabs.onRemoved` to begin recording events. Returns `this` for chaining.
+Creates a timeline instance. maxEvents controls how many events are kept in memory before the oldest are evicted. Defaults to 5000.
 
-#### `timeline.getEvents(): TimelineEvent[]`
+timeline.start()
 
-Returns a copy of all recorded events.
+Registers listeners on chrome.tabs.onCreated, onUpdated, onActivated, and onRemoved. Returns this so you can chain it with the constructor.
 
-#### `timeline.getByType(type: 'created' | 'updated' | 'activated' | 'removed'): TimelineEvent[]`
+timeline.getEvents()
 
-Returns events matching the specified type.
+Returns a shallow copy of all recorded events.
 
-#### `timeline.getForTab(tabId: number): TimelineEvent[]`
+timeline.getByType(type)
 
-Returns all events associated with a given tab ID.
+Filters events by type. Accepts 'created', 'updated', 'activated', or 'removed'.
 
-#### `timeline.getInRange(startMs: number, endMs?: number): TimelineEvent[]`
+timeline.getForTab(tabId)
 
-Returns events whose timestamp falls within the range `[startMs, endMs]`. Defaults `endMs` to `Date.now()`.
+Returns every event associated with a given tab ID.
 
-#### `timeline.getTopDomains(count?: number): Array<{ domain: string; visits: number }>`
+timeline.getInRange(startMs, endMs?)
 
-Aggregates events by hostname and returns the top `count` domains sorted by visit count (default `10`).
+Returns events whose timestamp falls between startMs and endMs inclusive. endMs defaults to Date.now().
 
-#### `timeline.getSummary(): { totalEvents: number; tabsCreated: number; tabsClosed: number; uniqueUrls: number; duration: number }`
+timeline.getTopDomains(count?)
 
-Returns a summary of the current session including total events, tabs created, tabs closed, unique URLs visited, and session duration in milliseconds.
+Parses the url field of every event, aggregates by hostname, and returns the top count domains sorted by visit count. Defaults to 10. Silently skips events with missing or invalid URLs.
 
-#### `timeline.save(): Promise<void>`
+timeline.getSummary()
 
-Persists the most recent 2000 events to `chrome.storage.local` under the key `__tab_timeline__`.
+Returns a session summary object with these fields.
 
-#### `timeline.load(): Promise<void>`
+- totalEvents is the current event count
+- tabsCreated is the number of 'created' events
+- tabsClosed is the number of 'removed' events
+- uniqueUrls is the count of distinct URLs seen
+- duration is the elapsed time in milliseconds since the first event
 
-Restores events from `chrome.storage.local`.
+timeline.save()
 
-#### `timeline.clear(): void`
+Persists the most recent 2000 events to chrome.storage.local under the key __tab_timeline__. Returns a Promise.
+
+timeline.load()
+
+Restores events from chrome.storage.local. Replaces the in-memory event array entirely. Returns a Promise.
+
+timeline.clear()
 
 Removes all events from memory.
 
-## License
+PERMISSIONS
 
-MIT
+Your manifest.json needs the tabs permission and storage if you use save/load.
 
-## Contributing
+```json
+{
+  "permissions": ["tabs", "storage"]
+}
+```
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+LICENSE
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-## See Also
-
-### Related Zovo Repositories
-
-- [webext-tabs-overview](https://github.com/theluckystrike/webext-tabs-overview) - Tab dashboard and stats
-- [chrome-tab-discard](https://github.com/theluckystrike/chrome-tab-discard) - Tab memory management
-- [chrome-extension-starter-mv3](https://github.com/theluckystrike/chrome-extension-starter-mv3) - Production-ready Chrome extension starter
-
-### Zovo Chrome Extensions
-
-- [Zovo Tab Manager](https://chrome.google.com/webstore/detail/zovo-tab-manager) - Manage tabs efficiently
-- [Zovo Focus](https://chrome.google.com/webstore/detail/zovo-focus) - Block distractions
-
-Visit [zovo.one](https://zovo.one) for more information.
+MIT. See LICENSE file.
 
 ---
 
-Built by [Zovo](https://zovo.one)
+Built at zovo.one
+github.com/theluckystrike
